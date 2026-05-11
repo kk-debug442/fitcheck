@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitCheck — 仮想試着アプリ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --border: #e8e6e0;
+    --text: #1a1a18;
+    --muted: #888780;
+    --accent: #1a1a18;
+    --accent-light: #f0efe9;
+    --green-bg: #eaf3de;
+    --green-text: #3b6d11;
+    --blue-bg: #e6f1fb;
+    --blue-text: #185fa5;
+    --amber-bg: #faeeda;
+    --amber-text: #854f0b;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 14px;
+  }
+  header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  header .tagline { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* ── Plan banner ── */
+  .plan-banner {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .plan-badge {
+    background: var(--green-bg);
+    color: var(--green-text);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .plan-limit { margin-left: auto; }
+  .upgrade-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .upgrade-btn:hover { opacity: 0.85; }
+
+  /* ── Layout ── */
+  .app {
+    display: flex;
+    height: calc(100vh - 88px);
+    overflow: hidden;
+  }
+
+  /* ── Left panel ── */
+  .left {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  /* ── Center panel ── */
+  .center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* ── Right panel ── */
+  .right {
+    width: 220px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 16px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  /* ── Section titles ── */
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 18px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .upload-zone:hover { background: var(--accent-light); border-color: #bbb; }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-zone .icon { font-size: 28px; }
+  .upload-zone p { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .upload-zone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+
+  /* ── Size selector ── */
+  .size-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+  .size-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: inherit;
+    transition: all 0.1s;
+  }
+  .size-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── Color dots ── */
+  .color-row { display: flex; gap: 7px; margin-bottom: 14px; flex-wrap: wrap; }
+  .color-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s;
+  }
+  .color-dot:hover { transform: scale(1.1); }
+  .color-dot.active { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── Main preview ── */
+  .preview-wrap {
+    width: 280px;
+    min-height: 360px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .preview-wrap img { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .preview-placeholder { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; }
+  .preview-placeholder .big-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+  .cloth-overlay {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 11px;
+    border-radius: 20px;
+    padding: 3px 10px;
+    display: none;
+  }
+  .generating-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Generate button ── */
+  .btn-generate {
+    width: 280px;
+    padding: 11px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+  .btn-generate:hover:not(:disabled) { opacity: 0.85; }
+  .btn-generate:active:not(:disabled) { transform: scale(0.98); }
+  .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── Clothes grid ── */
+  .clothes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+  .cloth-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    background: var(--surface);
+  }
+  .cloth-card:hover { border-color: #999; transform: translateY(-1px); }
+  .cloth-card.selected { border: 2px solid var(--accent); }
+  .cloth-img { width: 100%; aspect-ratio: 1; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 30px; }
+  .cloth-label { font-size: 10px; color: var(--muted); padding: 5px 6px; text-align: center; }
+  .cloth-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 20px;
+    margin-top: 2px;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    margin: 8px 0;
+    position: relative;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 38%;
+    height: 1px;
+    background: var(--border);
+  }
+  .divider::before { left: 0; }
+  .divider::after { right: 0; }
+
+  /* ── Upload small ── */
+  .upload-small {
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    position: relative;
+    transition: background 0.15s;
+    margin-bottom: 12px;
+  }
+  .upload-small:hover { background: var(--accent-light); }
+  .upload-small input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  /* ── AI box ── */
+  .ai-box {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    background: var(--bg);
+    min-height: 100px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .ai-box .ai-result { color: var(--text); display: none; }
+
+  /* ── Pricing modal ── */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 440px;
+    max-width: 95vw;
+  }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .modal .sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .plan-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .plan-card:hover { border-color: var(--accent); }
+  .plan-card.featured { border: 2px solid var(--accent); }
+  .plan-card .plan-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .plan-card .plan-price { font-size: 22px; font-weight: 700; margin: 8px 0; }
+  .plan-card .plan-price span { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .plan-card .plan-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .plan-card .plan-popular { font-size: 10px; background: var(--accent); color: #fff; border-radius: 20px; padding: 2px 8px; display: inline-block; margin-bottom: 6px; }
+  .modal-close {
+    display: block; width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--muted);
+  }
+  .modal-close:hover { background: var(--bg); }
+
+  /* ── Usage bar ── */
+  .usage-bar-wrap { margin-bottom: 14px; }
+  .usage-bar-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .usage-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .usage-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s; }
+
+  /* ── Download btn ── */
+  .btn-download {
+    width: 100%; padding: 9px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text);
+    margin-top: 8px;
+    display: none;
+    transition: background 0.15s;
+  }
+  .btn-download:hover { background: var(--bg); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">F</div>
+  <h1>FitCheck</h1>
+  <span class="tagline">AI仮想試着アプリ</span>
+</header>
+
+<div class="plan-banner">
+  <span class="plan-badge">無料プラン</span>
+  <span>今月の試着回数：<strong id="usageCount">2</strong> / 3回</span>
+  <span class="plan-limit" style="margin-left:auto"></span>
+  <button class="upgrade-btn" onclick="showModal()">プレミアムにアップグレード</button>
+</div>
+
+<div class="app">
+
+  <!-- Left -->
+  <div class="left">
+    <p class="section-title">あなたの写真</p>
+    <div class="upload-zone" id="personZone">
+      <input type="file" accept="image/*" id="personInput">
+      <span class="icon">🧍</span>
+      <p>写真をアップロード<br>またはドロップ</p>
+      <img id="personPreview">
+    </div>
+
+    <div style="margin-top:16px">
+      <p class="section-title">サイズ</p>
+      <div class="size-row">
+        <button class="size-btn" onclick="setSize(this,'XS')">XS</button>
+        <button class="size-btn active" onclick="setSize(this,'S')">S</button>
+        <button class="size-btn" onclick="setSize(this,'M')">M</button>
+        <button class="size-btn" onclick="setSize(this,'L')">L</button>
+        <button class="size-btn" onclick="setSize(this,'XL')">XL</button>
+      </div>
+
+      <p class="section-title">カラーフィルター</p>
+      <div class="color-row">
+        <div class="color-dot active" style="background:#1a1a18" onclick="setColor(this,'ブラック')"></div>
+        <div class="color-dot" style="background:#ffffff;border:1px solid #ddd" onclick="setColor(this,'ホワイト')"></div>
+        <div class="color-dot" style="background:#2563eb" onclick="setColor(this,'ブルー')"></div>
+        <div class="color-dot" style="background:#dc2626" onclick="setColor(this,'レッド')"></div>
+        <div class="color-dot" style="background:#16a34a" onclick="setColor(this,'グリーン')"></div>
+        <div class="color-dot" style="background:#d97706" onclick="setColor(this,'ベージュ')"></div>
+      </div>
+
+      <div class="usage-bar-wrap">
+        <div class="usage-bar-label">
+          <span>今月の利用</span>
+          <span id="usagePct">2/3回</span>
+        </div>
+        <div class="usage-bar">
+          <div class="usage-bar-fill" id="usageFill" style="width:66%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center -->
+  <div class="center">
+    <div class="preview-wrap" id="previewWrap">
+      <div class="preview-placeholder" id="placeholder">
+        <span class="big-icon">👗</span>
+        写真と服を選ぶと<br>ここに表示されます
+      </div>
+      <img id="mainImg">
+      <span class="cloth-overlay" id="clothOverlay"></span>
+      <div class="generating-overlay" id="genOverlay">
+        <div class="spinner"></div>
+        <span>AI合成中…</span>
+      </div>
+    </div>
+
+    <button class="btn-generate" id="genBtn" onclick="generate()" disabled>
+      ✨ AIコーデ提案を見る
+    </button>
+    <button class="btn-download" id="dlBtn" onclick="downloadImg()">
+      ⬇ 画像をダウンロード
+    </button>
+  </div>
+
+  <!-- Right -->
+  <div class="right">
+    <p class="section-title">服を選ぶ</p>
+    <div class="clothes-grid" id="clothGrid">
+      <div class="cloth-card" onclick="selectCloth(this,'カジュアルT','casual','👕')">
+        <div class="cloth-img">👕</div>
+        <div class="cloth-label">カジュアルT<br><span class="cloth-tag" style="background:#eaf3de;color:#3b6d11">カジュアル</span></div>
+      </div>
+      <div class="cloth-card" onclick="selectCloth(this,'フォーマルシャツ','formal','👔')">
+        <div class="cloth-img">👔</div>
+        <div class="cloth-label">フォーマル<br><span class="cloth-tag" style="background:#e6f1fb;color:#185fa5">フォーマル</span></div>
+      </div>
+      <div class="cloth-card" onclick="selectCloth(this,'スポーツウェア','sport','🏃')">
+        <div class="cloth-img">🏃</div>
+        <div class="cloth-label">スポーツ<br><span class="cloth-tag" style="background:#faeeda;color:#854f0b">スポーツ</span></div>
+      </div>
+      <div class="cloth-card" onclick="selectCloth(this,'ニットセーター','casual','🧶')">
+        <div class="cloth-img">🧶</div>
+        <div class="cloth-label">ニット<br><span class="cloth-tag" style="background:#eaf3de;color:#3b6d11">カジュアル</span></div>
+      </div>
+    </div>
+
+    <div class="divider">または</div>
+    <div class="upload-small">
+      <input type="file" accept="image/*" id="clothInput" onchange="uploadCloth(this)">
+      ⬆ 服の画像をアップロード
+    </div>
+
+    <p class="section-title">AIスタイリスト</p>
+    <div class="ai-box">
+      <span id="aiPlaceholder">写真と服を選んでボタンを押すと、コーデ提案が届きます</span>
+      <span class="ai-result" id="aiResult"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Pricing modal -->
+<div class="modal-bg" id="modalBg" onclick="hideModal(event)">
+  <div class="modal">
+    <h2>プレミアムプラン</h2>
+    <p class="sub">制限なく仮想試着を楽しもう</p>
+    <div class="plans">
+      <div class="plan-card">
+        <div class="plan-name">ライト</div>
+        <div class="plan-price">¥480<span>/月</span></div>
+        <div class="plan-desc">月30回まで<br>基本コーデ提案<br>画像保存</div>
+      </div>
+      <div class="plan-card featured">
+        <div class="plan-popular">人気</div>
+        <div class="plan-name">プレミアム</div>
+        <div class="plan-price">¥980<span>/月</span></div>
+        <div class="plan-desc">無制限<br>AIスタイリスト<br>優先サポート</div>
+      </div>
+    </div>
+    <button class="modal-close" onclick="hideModal()">今は無料プランで続ける</button>
+  </div>
+</div>
+
+<script>
+const state = { person: false, cloth: null, size: 'S', color: 'ブラック', usage: 2, limit: 3, resultDataUrl: null };
+
+function checkReady() {
+  document.getElementById('genBtn').disabled = !(state.person && state.cloth);
+}
+
+document.getElementById('personInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.person = true;
+    state.resultDataUrl = null;
+    const preview = document.getElementById('personPreview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+    const zone = document.getElementById('personZone');
+    zone.querySelector('.icon').style.display = 'none';
+    zone.querySelector('p').style.display = 'none';
+    const main = document.getElementById('mainImg');
+    main.src = ev.target.result;
+    main.style.display = 'block';
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('dlBtn').style.display = 'none';
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+});
+
+function selectCloth(el, name, type, emoji) {
+  document.querySelectorAll('.cloth-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.cloth = { name, type, emoji };
+  const overlay = document.getElementById('clothOverlay');
+  if (state.person) { overlay.style.display = 'block'; overlay.textContent = emoji + ' ' + name; }
+  checkReady();
+}
+
+function uploadCloth(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.querySelectorAll('.cloth-card').forEach(c => c.classList.remove('selected'));
+  const name = file.name.replace(/\.[^.]+$/, '');
+  state.cloth = { name, type: 'custom', emoji: '👗' };
+  const overlay = document.getElementById('clothOverlay');
+  if (state.person) { overlay.style.display = 'block'; overlay.textContent = '👗 ' + name; }
+  checkReady();
+}
+
+function setSize(btn, size) {
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.size = size;
+}
+
+function setColor(dot, color) {
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+  dot.classList.add('active');
+  state.color = color;
+}
+
+async function generate() {
+  if (state.usage >= state.limit) { showModal(); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  document.getElementById('genOverlay').style.display = 'flex';
+  document.getElementById('aiPlaceholder').style.display = 'none';
+  document.getElementById('aiResult').style.display = 'none';
+
+  const prompt = `あなたはプロのファッションスタイリストです。以下のコーデについて、着こなしポイントと合わせ方を日本語で2〜3文で提案してください。服：${state.cloth.name}、カラー：${state.color}、サイズ：${state.size}、スタイル：${state.cloth.type}。具体的で実践的なアドバイスをお願いします。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || '').join('') || 'コーデ提案を取得できませんでした。';
+    document.getElementById('aiResult').textContent = text;
+    document.getElementById('aiResult').style.display = 'block';
+
+    state.usage++;
+    document.getElementById('usageCount').textContent = state.usage;
+    document.getElementById('usagePct').textContent = state.usage + '/' + state.limit + '回';
+    document.getElementById('usageFill').style.width = Math.round((state.usage / state.limit) * 100) + '%';
+
+    document.getElementById('dlBtn').style.display = 'block';
+    if (state.usage >= state.limit) {
+      setTimeout(showModal, 1200);
+    }
+  } catch(err) {
+    document.getElementById('aiResult').textContent = 'エラーが発生しました。もう一度お試しください。';
+    document.getElementById('aiResult').style.display = 'block';
+  }
+
+  document.getElementById('genOverlay').style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = '✨ AIコーデ提案を見る';
+}
+
+function downloadImg() {
+  const img = document.getElementById('mainImg');
+  if (!img.src) return;
+  const a = document.createElement('a');
+  a.href = img.src;
+  a.download = 'fitcheck-' + Date.now() + '.jpg';
+  a.click();
+}
+
+function showModal() {
+  document.getElementById('modalBg').style.display = 'flex';
+}
+function hideModal(e) {
+  if (!e || e.target === document.getElementById('modalBg')) {
+    document.getElementById('modalBg').style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
