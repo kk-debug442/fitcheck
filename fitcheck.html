@@ -615,7 +615,7 @@ async function generate() {
   const prompt = `あなたはプロのファッションスタイリストです。以下のコーデについて、着こなしポイントと合わせ方を日本語で2〜3文で提案してください。服：${state.cloth.name}、カラー：${state.color}、サイズ：${state.size}、スタイル：${state.cloth.type}。具体的で実践的なアドバイスをお願いします。`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/.netlify/functions/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
